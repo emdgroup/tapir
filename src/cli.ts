@@ -18,7 +18,7 @@ const generate = async (source: string): Promise<void> => {
 
     const generator = new Generator({ api, out: process.stdout });
     process.stdout.write(fs.readFileSync('src/error.ts'));
-    process.stdout.write(fs.readFileSync('src/core.ts'));
+    process.stdout.write(fs.readFileSync('src/core.ts').toString().replace(/^import .*/g, ''));
     await generator.generate();
 };
 
