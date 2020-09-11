@@ -10,7 +10,9 @@
   ],
   "bin": "./bin/cli.js",
   "scripts": {
-    "test": "mocha --bail --watch-files '**/*.ts' --extension ts --require ts-node/register --timeout 10000 'src/**/*.spec.ts'",
+    "test:ts": "mocha --bail --watch-files '**/*.ts' --extension ts --require ts-node/register --timeout 10000 'src/**/*.spec.ts'",
+    "test:js": "yarn build && mocha --bail --watch-files '**/*.js' --timeout 10000 'dist/**/*.spec.js'",
+    "test:strict": "yarn test:js --forbid-only",
     "build": "tsc",
     "lint": "eslint src/"
   },
