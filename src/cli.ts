@@ -2,6 +2,7 @@ import * as SwaggerParser from "swagger-parser";
 import { OpenAPIV3 } from "openapi-types";
 
 import * as fs from 'fs';
+import * as path from 'path';
 
 import { Generator } from '.';
 
@@ -17,8 +18,9 @@ const generate = async (source: string): Promise<void> => {
     }
 
     const generator = new Generator({ api, out: process.stdout });
-    process.stdout.write(fs.readFileSync('src/error.ts'));
-    process.stdout.write(fs.readFileSync('src/core.ts').toString().replace(/^import .*/g, ''));
+    const src = path.resolve(__dirname, '..', 'src');
+    process.stdout.write(fs.readFileSync(path.resolve(src, 'error.ts')));
+    process.stdout.write(fs.readFileSync(path.resolve(src, 'core.ts')).toString().replace(/^import .*/g, ''));
     await generator.generate();
 };
 
