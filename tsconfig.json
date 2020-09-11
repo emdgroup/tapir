@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es2019",
+        "sourceMap": true,
+        "strict": true,
+        "strictNullChecks": true,
+        "declaration": true,
+        "esModuleInterop": true,
+        "outDir": "dist"
+    }
+}

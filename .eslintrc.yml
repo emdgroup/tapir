@@ -1,0 +1,20 @@
+extends:
+  - 'eslint:recommended'
+  - 'plugin:@typescript-eslint/eslint-recommended'
+  - 'plugin:@typescript-eslint/recommended'
+parser: '@typescript-eslint/parser'
+plugins:
+  - '@typescript-eslint'
+root: true
+rules:
+  comma-dangle:
+    - error
+    - always-multiline
+  indent:
+    - error
+    - 4
+  no-trailing-spaces:
+    - error
+    - ignoreComments: false
+      skipBlankLines: false
+  semi: 2
