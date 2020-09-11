@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 import * as fs from 'fs';
 
+import * as path from 'path';
+
 import { expect } from 'chai';
 
 export { expect } from 'chai';
@@ -32,11 +34,11 @@ export function transpile(source: string): Record<string, (...args: any[]) => an
         },
     });
     files++;
-    fs.writeFileSync(`./src/foo.${files}.ts`, core + source);
-    fs.writeFileSync(`./src/foo.${files}.js`, transpiled.outputText);
+    fs.writeFileSync(path.resolve(__dirname, `foo.${files}.ts`), core + source);
+    fs.writeFileSync(path.resolve(__dirname, `foo.${files}.js`), transpiled.outputText);
     const lib = require(`./foo.${files}.js`) as any;
-    fs.unlinkSync(`./src/foo.${files}.js`);
-    fs.unlinkSync(`./src/foo.${files}.ts`);
+    fs.unlinkSync(path.resolve(__dirname, `foo.${files}.ts`));
+    fs.unlinkSync(path.resolve(__dirname, `foo.${files}.js`));
     return lib;
 }
 
