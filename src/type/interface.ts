@@ -71,7 +71,7 @@ export class Interface extends SchemaType {
             write(`props.delete('${field}');`, 4);
         }
         write([
-            'if (options?.additionalProperties === false && props.size) return false;',
+            `if ((options?.additionalProperties === false || ${this.schema.additionalProperties === false}) && props.size) return false;`,
             'return true;',
         ], 4);
         write('}');
@@ -107,7 +107,7 @@ export class Interface extends SchemaType {
         }
 
         write([
-            `if (options?.additionalProperties === false && props.size) {`,
+            `if ((options?.additionalProperties === false || ${this.schema.additionalProperties === false}) && props.size) {`,
             `    err.push({ name: 'AdditionalProperties', expected: [], actual: [...props] });`,
             `}`,
             'if (err.length) throw new ValidationError(err);',

@@ -55,6 +55,21 @@ const suite = [{
     }, {
         input: { bar: ['123'] },
     }],
+}, {
+    subject: new Interface('AdditionalProperties', {
+        additionalProperties: false,
+        properties: {
+            foo: {
+                type: 'string',
+            },
+        },
+    }),
+    tests: [{
+        input: { foo: '123' },
+    }, {
+        input: { bar: '123' },
+        errors: [{ name: 'AdditionalProperties', actual: ['bar'] }],
+    }],
 }] as {
     subject: SchemaType;
     tests: {

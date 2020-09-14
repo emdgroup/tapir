@@ -16,6 +16,7 @@ tapir openapi.yml > types.ts
 * Objects:
     * `required`
     * `allOf` and `oneOf`
+    * `additionalProperties` with a boolean
 * Arrays:
     * `items`
 
@@ -29,6 +30,7 @@ Not supported
     * `maximum`
     * `exclusiveMinimum`
     * `exclusiveMaximum`
+    * `multipleOf`
     * `format`
     * `not`
     * `nullable`
@@ -36,10 +38,9 @@ Not supported
     * `readOnly`
     * `writeOnly`
 * Objects:
-    * `additionalProperties`
+    * `additionalProperties` with a schema
     * `minProperties`
     * `maxProperties`
-    * `multipleOf`
     * `anyOf`
     * `xml`
 * Arrays:
