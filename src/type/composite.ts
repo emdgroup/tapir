@@ -23,8 +23,8 @@ export class Composite extends SchemaType {
         this.mode = schema.allOf ? CompositeModes.ALL_OF : CompositeModes.ONE_OF;
     }
 
-    emitTypeGuard(write: WriteCb) {
-        write(`export function ${this.typeGuardName}(val: unknown, options?: TypeGuardOptions): val is ${this.name} {\n`);
+    emitTypeGuard(write: WriteCb): void {
+        write(`export function ${this.typeGuardName}(val: unknown, options?: TypeGuardOptions): val is ${this.name} {`);
 
         if (this.mode === CompositeModes.ALL_OF) {
             for (const schema of this.schema.allOf || []) {
@@ -39,15 +39,16 @@ export class Composite extends SchemaType {
                 const ref = new RefType(this.name, schema);
                 write(`if (${ref.typeGuardName}(val)) { return true; }`, 4);
             }
-            write(`return false;\n}`);
+            write(`return false;\n}`, 4);
         } else {
             throw new Error(`Unhandled composite operator ${this.mode}`);
         }
     }
 
-    emitTypeAssertion(write: WriteCb) {
+    emitTypeAssertion(write: WriteCb): void {
+        write(`export function ${this.assertionName}(val: unknown, options?: TypeGuardOptions): asserts val is ${this.name} {`);
+
         write([
-            `export function ${this.assertionName}(val: unknown, options?: TypeGuardOptions): asserts val is ${this.name} {`,
             'let err: Errors[] = [];',
             `if (!isObject(val)) {`,
             `    err.push({ name: 'TypeMismatch', expected: 'object' });`,
@@ -56,7 +57,7 @@ export class Composite extends SchemaType {
             'const props = new Set(Object.keys(val));',
         ], 4);
 
-        for (const schema of this.schema.allOf || this.schema.anyOf || []) {
+        for (const schema of this.schema.allOf || this.schema.oneOf || []) {
 
             if ('$ref' in schema) {
                 const ref = new RefType(this.name, schema);
@@ -85,7 +86,7 @@ export class Composite extends SchemaType {
             throw new Error(`Unhandled composite operator ${this.mode}`);
         }
         const types: string[] = [];
-        for (const schema of this.schema.allOf || this.schema.anyOf || []) {
+        for (const schema of this.schema.allOf || this.schema.oneOf || []) {
             if (!('$ref' in schema)) continue;
             types.push(new RefType(this.name, schema).emit());
         }
