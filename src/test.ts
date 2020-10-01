@@ -36,6 +36,7 @@ export function transpile(source: string): Record<string, (...args: any[]) => an
     files++;
     fs.writeFileSync(path.resolve(__dirname, `foo.${files}.ts`), core + source);
     fs.writeFileSync(path.resolve(__dirname, `foo.${files}.js`), transpiled.outputText);
+    delete require.cache[require.resolve(`./foo.${files}.js`)];
     const lib = require(`./foo.${files}.js`) as any;
     fs.unlinkSync(path.resolve(__dirname, `foo.${files}.ts`));
     fs.unlinkSync(path.resolve(__dirname, `foo.${files}.js`));
@@ -47,7 +48,9 @@ export function testAssertion(assertion: () => void, errors: Errors[]): void {
         assertion();
         if (errors.length) expect(false, 'No exception thrown').to.be.true;
     } catch(err: any) {
-        expect(err instanceof ValidationError).to.be.true;
+        const isValidationError = err instanceof ValidationError;
+        if (!isValidationError) console.log(err);
+        expect(isValidationError).to.be.true;
         for (const [idx, error] of (err.errors as Errors[]).entries()) {
             expect(errors[idx]).to.not.be.undefined;
             expect(error).to.deep.include(errors[idx]);
