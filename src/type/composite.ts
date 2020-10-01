@@ -30,14 +30,14 @@ export class Composite extends SchemaType {
             for (const schema of this.schema.allOf || []) {
                 if (!('$ref' in schema)) continue;
                 const ref = new RefType(this.name, schema);
-                write(`if (!${ref.typeGuardName}(val)) { return false; }`, 4);
+                write(`if (!${ref.typeGuardName}(val, options)) { return false; }`, 4);
             }
             write(`return true;}`);
         } else if (this.mode === CompositeModes.ONE_OF) {
             for (const schema of this.schema.oneOf || []) {
                 if (!('$ref' in schema)) continue;
                 const ref = new RefType(this.name, schema);
-                write(`if (${ref.typeGuardName}(val)) { return true; }`, 4);
+                write(`if (${ref.typeGuardName}(val, options)) { return true; }`, 4);
             }
             write(`return false;\n}`, 4);
         } else {
@@ -61,7 +61,7 @@ export class Composite extends SchemaType {
 
             if ('$ref' in schema) {
                 const ref = new RefType(this.name, schema);
-                write(`try { ${ref.assertionName}(val); } catch(compErr) { err.push(compErr); }`, 4);
+                write(`try { ${ref.assertionName}(val, options); } catch(compErr) { err.push(compErr); }`, 4);
             }
         }
         if (this.mode === CompositeModes.ONE_OF) {
