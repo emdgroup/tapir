@@ -1,6 +1,6 @@
 {
   "name": "@emdgroup/tapir",
-  "version": "1.0.0-alpha.4",
+  "version": "1.0.0-alpha.7",
   "license": "Apache-2.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -12,7 +12,6 @@
   ],
   "files": [
     "dist",
-    "src",
     "bin"
   ],
   "bin": "./bin/cli.js",
@@ -21,6 +20,7 @@
     "test:js": "yarn build && mocha --bail --watch-files '**/*.js' --timeout 10000 'dist/**/*.spec.js'",
     "test:strict": "yarn test:js --forbid-only",
     "build": "tsc",
+    "prepublish": "yarn build",
     "lint": "eslint src/"
   },
   "devDependencies": {
