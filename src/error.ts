@@ -13,6 +13,10 @@ interface TypeMismatchError extends ErrorDetails {
     name: 'TypeMismatch';
     expected: 'string' | 'array' | 'boolean' | 'number' | 'object';
 }
+interface EnumError extends ErrorDetails {
+    name: 'Enum';
+    expected: string;
+}
 
 interface FormatError extends ErrorDetails {
     name: 'Format';
@@ -29,7 +33,7 @@ interface AdditionalPropertiesError extends ErrorDetails {
     actual: string[];
 }
 
-export type Errors = RequiredError | TypeMismatchError | AdditionalPropertiesError | FormatError  | NestedError;
+export type Errors = RequiredError | TypeMismatchError | AdditionalPropertiesError | FormatError  | NestedError | EnumError;
 
 
 export class ValidationError extends Error {

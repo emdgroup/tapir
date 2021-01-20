@@ -23,12 +23,26 @@ export class Enum extends PrimitiveType {
 
     emitTypeGuard(write: WriteCb): void {
         write(`export function is${this.name}(val: unknown, options?: TypeGuardOptions): val is ${this.name} {`);
-        write(`return ${this.typeGuardName}(val, options) && `, 4);
+        write(`return ${this.typeGuardName}(val) && `, 4);
         if (this.type === 'string') {
             write(`val in ${this.name};`, 8);
         } else {
             write(`${JSON.stringify(this.enum)}.includes(val);`, 8);
         }
         write(`}`);
+    }
+
+
+    emitTypeAssertion(write: WriteCb): void {
+        write(`${this.name ? 'export ': ''}function assert${this.name}(val: unknown, options?: TypeGuardOptions): asserts val is ${this.name} {`);
+
+        write([
+            `${this.assertionName}(val);`,
+            this.type === 'string'
+                ? `if (!(val in ${this.name}))`
+                : `if (!${JSON.stringify(this.enum)}.includes(val))`,
+            `    throw new ValidationError([{ name: 'Enum', expected: '${this.name}' }]);`,
+        ], 4);
+        write('}');
     }
 }
