@@ -9,37 +9,64 @@ import { List } from './type/list';
 import { Enum } from './type/enum';
 import { SchemaType } from './type/base';
 
-import { isObject } from './core';
+import * as path from 'path';
+import * as fs from 'fs';
 
-const METHODS: (keyof OpenAPIV3.PathItemObject)[] = ['get', 'post', 'put', 'delete', 'options', 'patch', 'head', 'patch'];
+import AJV from 'ajv';
+import standaloneCode from 'ajv/dist/standalone';
+
+import { createWriteStream } from 'fs';
+import { isPrimitiveType } from './type/primitive';
+import { bundle } from './bundle';
+
+export function isObject(arg: unknown): arg is Record<string, unknown> {
+    return arg !== null && typeof arg === "object" && !Array.isArray(arg);
+}
 
 type SchemaObject = OpenAPIV3.ReferenceObject | OpenAPIV3.NonArraySchemaObject | OpenAPIV3.ArraySchemaObject;
 interface GeneratorOptions {
     api: OpenAPIV3.Document;
-    out: Writable;
-};
+    out?: string;
+}
 
 export class Generator implements GeneratorOptions {
     api;
-    out;
+    dts;
+    js;
     types;
     references: Map<string, unknown>;
     dummy;
+    ajv;
+    out;
 
-    constructor({ api, out }: GeneratorOptions) {
+    constructor({ api, out = 'out' }: GeneratorOptions) {
         this.api = api;
         this.references = new Map();
         this.out = out;
+        this.dts = createWriteStream(path.join(out, 'types.d.ts'));
+        this.js = createWriteStream(path.join(out, 'types.ajv.js'));
         this.buildReferences('#', this.api);
         this.types = new Map<string, OpenAPIV3.NonArraySchemaObject | OpenAPIV3.ArraySchemaObject>();
         this.dummy = 1;
+        this.ajv = new AJV({
+            allErrors: true,
+            inlineRefs: false,
+            strict: true,
+            strictTypes: false,
+            validateFormats: false,
+            code: { lines: true, source: true },
+            keywords: [{
+                keyword: 'example',
+            }],
+        });
+
 
     }
 
-    write(line: string | string[], indent = 0) {
+    write(stream: Writable, line: string | string[], indent = 0): void {
         const lines: string[] = Array.isArray(line) ? line : [line];
         const padding = Array.from({ length: indent }, () => ' ').join('');
-        for (const l of lines) this.out.write(`${padding}${l}\n`);
+        for (const l of lines) stream.write(`${padding}${l}\n`);
     }
 
     private buildReferences(prefix: string, root: unknown): void {
@@ -94,12 +121,36 @@ export class Generator implements GeneratorOptions {
             this.types.set(newName, schema);
             return { '$ref': `#/components/schemas/${newName}` };
         } else if (schema.type === 'array') {
+            const newName = name ? name : `Anonymous${this.dummy++}`;
             const itemSchema = schema.items;
             if (this.walkSchema(itemSchema)) schema.items = this.addType(itemSchema, this.generateName(name, 'item'));
+            this.types.set(newName, schema);
+            return { '$ref': `#/components/schemas/${newName}` };
+        } else if (isPrimitiveType(schema)) {
+            const newName = name ? name : `Anonymous${this.dummy++}`;
+            this.types.set(newName, schema);
             return schema;
         }
         console.log(schema);
         throw new Error('Schema not supported');
+    }
+
+    buildPathParameters(pathData: OpenAPIV3.PathItemObject): { pathParameters?: OpenAPIV3.NonArraySchemaObject } {
+        const params = pathData.parameters;
+        const props: OpenAPIV3.NonArraySchemaObject = {
+            type: 'object',
+            required: [],
+            properties: {},
+        };
+        params?.forEach((p) => {
+            if('$ref' in p) return;
+            const { name, in: where, schema } = p;
+            props.required?.push(name);
+            if(props.properties) props.properties[name] = schema as OpenAPIV3.NonArraySchemaObject;
+        });
+        return params ? {
+            pathParameters: props,
+        } : {};
     }
 
     emitRoutes() {
@@ -107,35 +158,55 @@ export class Generator implements GeneratorOptions {
         const validators = [];
 
         for(const [path, value] of Object.entries(this.api.paths)) {
-            const { parameters, description, servers, summary, ...methods } = this.unreference(value);
-            routes.push(`"${path}": {`)
+            const { parameters, description, servers, summary, ...methods } = this.unreference<any>(value);
             for (const [method, operation] of Object.entries(methods as { [key: string]: OpenAPIV3.OperationObject })) {
                 const { operationId } = operation;
-                routes.push(`    ${method}: "${operationId}",`);
-                this.write(`export type ${operationId}Route = Route<${operationId}Request, ${operationId}Response>;`);
+                routes.push(`    '${method.toUpperCase()} ${path}': '${operationId}',`);
+                this.write(this.dts, `export type ${operationId}Route = Route<${operationId}Request, ${operationId}Response>;`);
                 validators.push(
-                    `"${operationId}": {`,
-                    `    request: is${operationId}Request,`,
-                    `    response: assert${operationId}Response,`,
+                    `${operationId}: {`,
+                    `    isRequest: exports.is${operationId}Request,`,
+                    `    isResponse: exports.is${operationId}Response,`,
+                    `    assertRequest: assert${operationId}Request,`,
+                    `    assertResponse: assert${operationId}Response,`,
                     `},`,
                 );
             }
-            routes.push(`},`);
+            // routes.push(`},`);
         }
-        this.write(`export const validators = {`);
-        this.write(validators, 4);
-        this.write('};');
+        this.write(this.js, `exports.validators = {`);
+        this.write(this.js, validators, 4);
+        this.write(this.js, '};');
 
-        this.write('export const routes: { [key: string]: { [key: string]: keyof typeof validators } } = {');
-        this.write(routes, 4);
-        this.write('};');
+        this.write(this.dts, [
+            'export const validators: Record<Operation, {',
+            '    isRequest<T>(arg: unknown): arg is T;',
+            '    isResponse<T>(arg: unknown): arg is T;',
+            '    assertRequest<T>(arg: unknown): asserts arg is T;',
+            '    assertResponse<T>(arg: unknown): asserts arg is T;',
+            '}>;',
+        ]);
+
+        this.write(this.dts, 'export const routes: { [key: string]: { [key: string]: Operations } };');
+
+        this.write(this.js, 'exports.routes = {');
+        this.write(this.js, routes, 4);
+        this.write(this.js, '};');
     }
 
-    generate() {
+    async generate(): Promise<void> {
+        const operations: string[] = [];
+
+        for(const [name, schema] of Object.entries(this.api.components?.schemas || [])) {
+            this.addType(schema, name);
+        }
+
+
         for(const [path, value] of Object.entries(this.api.paths)) {
-            const { parameters, description, servers, summary, ...methods } = this.unreference(value);
-            for (const [method, operation] of Object.entries(methods as { [key: string]: OpenAPIV3.OperationObject })) {
+            const { parameters, description, servers, summary, ...methods } = this.unreference<any>(value);
+            for (const [, operation] of Object.entries(methods as { [key: string]: OpenAPIV3.OperationObject })) {
                 const { operationId } = operation;
+                if (operationId) operations.push(operationId);
                 const responses: OpenAPIV3.NonArraySchemaObject[] = [];
                 for (const [code, response] of Object.entries(operation.responses || {})) {
                     const { content } = this.unreference(response);
@@ -169,13 +240,32 @@ export class Generator implements GeneratorOptions {
                     required: ['json', 'pathParameters'],
                     properties: {
                         json: schema || { type: 'object', properties: {} },
-                        // ...this.buildPathParameters(pathData),
+                        ...this.buildPathParameters(value || {}),
                     },
                 } as OpenAPIV3.NonArraySchemaObject, requestTypeName);
             }
         }
 
+        const exports: Record<string, string> = {};
+
         for (const [type, schema] of this.types) {
+            const ref = '#/components/schemas/' + type;
+            this.ajv.addSchema(schema, ref);
+            exports['is' + type] = ref;
+
+            this.write(this.js, [
+                `exports.assert${type} = assert${type};`,
+                `function assert${type}(data) {`,
+                `    if(exports.is${type}(data)) return;`,
+                `    throw new ValidationError(exports.is${type}.errors);`,
+                `}`,
+                '',
+            ]);
+            this.write(this.dts, [
+                `export function assert${type}(data: unknown): asserts data is ${type};`,
+                `export function is${type}(data: unknown): data is ${type};`,
+            ]);
+
             let i: SchemaType | undefined = undefined;
             if (isComposite(schema)) {
                 i = new Composite(type, schema);
@@ -187,15 +277,34 @@ export class Generator implements GeneratorOptions {
                 i = new Enum(type, schema);
             }
             if (i) {
-                i.emitDefinition(this.write.bind(this));
-                i.emitTypeAssertion(this.write.bind(this));
-                i.emitTypeGuard(this.write.bind(this));
+                i.emitDefinition(this.write.bind(this, this.dts));
             }
         }
 
+        const src = path.resolve(__dirname, '..', 'dist');
+
+        this.js.write(fs.readFileSync(path.resolve(src, 'error.js')) + '\n');
+        this.dts.write(fs.readFileSync(path.resolve(src, 'error.d.ts')) + '\n');
+        this.js.write(standaloneCode(this.ajv, exports) + '\n');
+
+        if (operations.length) this.write(this.dts, [
+            `export type Operation =\n    ` +
+            operations.map((k) => `'${k}'`).join(' |\n    ') + ';',
+        ]);
+
+        this.write(this.dts, ['export type Route<L, K> = [L, K];']);
+
         this.emitRoutes();
 
-        return new Promise((resolve) => this.out.end(resolve));
+        await Promise.all([
+            new Promise((resolve) => this.dts.end(resolve)),
+            new Promise((resolve) => this.js.end(resolve)),
+        ]);
+
+        await bundle(
+            path.join(this.out, 'types.ajv.js'),
+            path.join(this.out, 'types'),
+        );
     }
 
 }

@@ -1,5 +1,5 @@
 import { OpenAPIV3 } from 'openapi-types';
-import { SchemaType, WriteCb } from './base';
+import { SchemaType } from './base';
 
 export class RefType extends SchemaType {
     refName;

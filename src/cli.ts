@@ -1,30 +1,37 @@
 import * as SwaggerParser from "swagger-parser";
 import { OpenAPIV3 } from "openapi-types";
 
-import * as fs from 'fs';
 import * as path from 'path';
+import * as yaml from 'js-yaml';
 
 import { Generator } from '.';
 
 
-const generate = async (source: string): Promise<void> => {
+const generate = async (argv: string[]): Promise<void> => {
+    const [source, dest] = argv.slice(2);
+
+    let parseInput: string | OpenAPIV3.Document;
+    if (source === '-') {
+        const chunks: Buffer[] = [];
+        for await (const chunk of process.stdin) chunks.push(chunk);
+        parseInput = yaml.load(Buffer.concat(chunks).toString()) as OpenAPIV3.Document;
+    } else {
+        parseInput = source;
+    }
+
     const parser = new SwaggerParser.default();
 
-    await parser.validate(source);
-    const api = await parser.parse(source) as OpenAPIV3.Document;
+    const api = await parser.parse(parseInput, { validate: { schema: true, spec: true } }) as OpenAPIV3.Document;
 
     if (!api.openapi) {
         throw new Error("Not a valid OpenAPI V3 specification.");
     }
 
-    const generator = new Generator({ api, out: process.stdout });
-    const src = path.resolve(__dirname, '..', 'src');
-    process.stdout.write(fs.readFileSync(path.resolve(src, 'error.ts')));
-    process.stdout.write(fs.readFileSync(path.resolve(src, 'core.ts')).toString().replace(/^import .*/g, ''));
+    const generator = new Generator({ api, out: path.resolve(dest) });
     await generator.generate();
 };
 
-generate(process.argv[2])
+generate(process.argv)
     .catch((err: Error) => {
         console.error(err.stack);
         process.exit(1);

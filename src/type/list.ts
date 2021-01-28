@@ -20,14 +20,6 @@ export class List extends SchemaType {
         }
     }
 
-    typeCheck(): string {
-        return `isTypedArray(val.${this.name}, ${this.subType.typeGuardName})`;
-    }
-
-    assert(): string {
-        return `assertTypedArray(val.${this.name}, ${this.subType.assertionName})`;
-    }
-
     emitDefinition(write: WriteCb): void {
         write(`export type ${this.name} = ${this.emit()};`);
     }

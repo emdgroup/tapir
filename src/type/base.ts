@@ -25,7 +25,9 @@ export class SchemaType {
         return `${this.assertionName}(val.${this.name}, options)`;
     }
 
-    emitDefinition(write: WriteCb): void {}
+    emitDefinition(write: WriteCb): void {
+        throw new Error('must be implemented');
+    }
 
     emitTypeGuard(write: WriteCb): void {
         if(this.required) {

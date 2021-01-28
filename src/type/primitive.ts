@@ -34,17 +34,6 @@ export class PrimitiveType extends SchemaType {
         }
     }
 
-    assert(): string {
-        return `${this.assertionName}(val.${this.name})`;
-    }
-
-    typeCheck(): string {
-        const typeCheck = `${this.typeGuardName}(val.${this.name})`;
-        if (!this.enum) return typeCheck;
-
-        return `(${typeCheck} && ${JSON.stringify(this.enum)}.includes(val.${this.name}))`;
-    }
-
     emit(): string {
         if (this.enum) {
             return this.enum.map((v) => `${JSON.stringify(v)}`).join(' | ');

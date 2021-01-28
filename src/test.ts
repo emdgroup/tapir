@@ -1,49 +1,27 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 import * as fs from 'fs';
 
+import { Generator } from '.';
+
+import * as crypto from 'crypto';
+import { OpenAPIV3 } from 'openapi-types';
 import * as path from 'path';
 
 import { expect } from 'chai';
 
 export { expect } from 'chai';
 
-import * as ts from "typescript";
+import { Errors } from './error';
 
-import { Errors, ValidationError } from './error';
-
-export function buildWriteCb(): [() => string, (line: string | string[], indent?: number) => void] {
-    let out = '';
-    return [() => out, (line: string | string[], indent = 0) => {
-        const lines: string[] = Array.isArray(line) ? line : [line];
-        const padding = Array.from({ length: indent }, () => ' ').join('');
-        for (const l of lines) out += `${padding}${l}\n`;
-    }];
+export interface TestSuite {
+    subject: Parameters<typeof setup>[0];
+    tests: {
+        input: any;
+        errors?: Errors[];
+    }[];
 }
 
-const core = fs.readFileSync('./src/core.ts');
-
-let files = 0;
-
-export function transpile(source: string): Record<string, (...args: any[]) => any> {
-    const transpiled = ts.transpileModule(core + source, {
-        compilerOptions: {
-            module: ts.ModuleKind.CommonJS,
-            target: ts.ScriptTarget.ES2019,
-            strict: true,
-            strictNullChecks: true,
-        },
-    });
-    files++;
-    fs.writeFileSync(path.resolve(__dirname, `foo.${files}.ts`), core + source);
-    fs.writeFileSync(path.resolve(__dirname, `foo.${files}.js`), transpiled.outputText);
-    delete require.cache[require.resolve(`./foo.${files}.js`)];
-    const lib = require(`./foo.${files}.js`) as any;
-    fs.unlinkSync(path.resolve(__dirname, `foo.${files}.ts`));
-    fs.unlinkSync(path.resolve(__dirname, `foo.${files}.js`));
-    return lib;
-}
-
-export function testAssertion(assertion: () => void, errors: Errors[]): void {
+export function testAssertion(ValidationError: any, assertion: () => void, errors: Errors[]): void {
     try {
         assertion();
         if (errors.length) expect(false, 'No exception thrown').to.be.true;
@@ -51,9 +29,58 @@ export function testAssertion(assertion: () => void, errors: Errors[]): void {
         const isValidationError = err instanceof ValidationError;
         if (!isValidationError) console.log(err);
         expect(isValidationError).to.be.true;
+        expect(err.errors.length).to.equal(errors.length, 'number of errors');
         for (const [idx, error] of (err.errors as Errors[]).entries()) {
             expect(errors[idx]).to.not.be.undefined;
-            expect(error).to.deep.include(errors[idx]);
+            expect(error).to.deep.equal(errors[idx]);
         }
     }
+}
+
+export async function setup(schemas: OpenAPIV3.ComponentsObject['schemas']): Promise<any> {
+    const TMP = path.join(process.cwd(), 'tmp', crypto.randomBytes(8).toString('hex'));
+    fs.mkdirSync(TMP);
+    const generator = new Generator({
+        api: {
+            openapi: '3.0.3',
+            info: {
+                title: 'test',
+                version: '1.0.0',
+            },
+            paths: {
+                '/foo': {},
+            },
+            components: {
+                schemas,
+            },
+        },
+        out: TMP,
+    });
+
+    await generator.generate();
+
+    after(async () => Promise.all(
+        ['types.js', 'types.mjs', 'types.d.ts']
+            .map((f) => fs.promises.unlink(path.join(TMP, f)).catch(() => null))
+    ).then(() => fs.promises.rmdir(TMP)));
+
+    return require(path.join(TMP, 'types.js'));
+}
+
+export function runSuite(suite: TestSuite[]): void {
+    describe('Interface', () => suite.forEach(({ subject, tests }) => {
+        const name = Object.keys(subject!)[0];
+        describe(name, () => {
+            let types: any;
+            before(async () => types = await setup(subject));
+            const assertionName = `assert${name}`;
+            it(assertionName, () => tests.forEach((test) => {
+                testAssertion(types.ValidationError, () => types[assertionName](test.input), test.errors || []);
+            }));
+            const typeGuardName = `is${name}`;
+            it(typeGuardName, () => tests.forEach((test) => {
+                expect(types[typeGuardName](test.input)).to.equal(!test.errors);
+            }));
+        });
+    }));
 }

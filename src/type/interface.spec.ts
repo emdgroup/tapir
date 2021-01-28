@@ -1,11 +1,7 @@
-import { buildWriteCb, transpile, testAssertion, expect } from '../test';
+import { runSuite, TestSuite } from '../test';
 
-import { Errors } from '../error';
-import { SchemaType } from './base';
-import { Interface } from './interface';
-
-const suite = [{
-    subject: new Interface('TestType', {
+const suite: TestSuite[] = [{
+    subject: { TestType: {
         properties: {
             foo: {
                 type: 'string',
@@ -17,7 +13,7 @@ const suite = [{
                 },
             },
         },
-    }),
+    } },
     tests: [{
         input: { foo: 123 },
         errors: [{ name: 'TypeMismatch', expected: 'string', field: 'foo' }],
@@ -35,7 +31,7 @@ const suite = [{
         }] }],
     }],
 }, {
-    subject: new Interface('RequiredProps', {
+    subject: { RequiredProps: {
         required: ['bar'],
         properties: {
             foo: {
@@ -48,7 +44,7 @@ const suite = [{
                 },
             },
         },
-    }),
+    } },
     tests: [{
         input: { foo: '123' },
         errors: [{ name: 'Required', field: 'bar' }],
@@ -56,40 +52,20 @@ const suite = [{
         input: { bar: ['123'] },
     }],
 }, {
-    subject: new Interface('AdditionalProperties', {
+    subject: { AdditionalProperties: {
         additionalProperties: false,
         properties: {
             foo: {
                 type: 'string',
             },
         },
-    }),
+    } },
     tests: [{
         input: { foo: '123' },
     }, {
         input: { bar: '123' },
-        errors: [{ name: 'AdditionalProperties', actual: ['bar'] }],
+        errors: [{ name: 'AdditionalProperties', actual: ['bar'], expected: [] }],
     }],
-}] as {
-    subject: SchemaType;
-    tests: {
-        input: any;
-        errors?: Errors[];
-    }[];
-}[];
+}];
 
-describe('Interface', () => suite.forEach(({ subject, tests }) => {
-    describe(subject.name, () => {
-        const [out, writeCb] = buildWriteCb();
-        subject.emitDefinition(writeCb);
-        subject.emitTypeAssertion(writeCb);
-        subject.emitTypeGuard(writeCb);
-        const funcs = transpile(out());
-        it(subject.assertionName, () => tests.forEach((test) => {
-            testAssertion(() => funcs[subject.assertionName](test.input), test.errors || []);
-        }));
-        it(subject.typeGuardName, () => tests.forEach((test) => {
-            expect(funcs[subject.typeGuardName](test.input)).to.equal(!test.errors);
-        }));
-    });
-}));
+runSuite(suite);
