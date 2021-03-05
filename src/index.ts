@@ -12,8 +12,9 @@ import { SchemaType } from './type/base';
 import * as path from 'path';
 import * as fs from 'fs';
 
-import AJV from 'ajv';
+import AJV, { Options } from 'ajv';
 import standaloneCode from 'ajv/dist/standalone';
+import addFormats from 'ajv-formats';
 
 import { createWriteStream } from 'fs';
 import { isPrimitiveType } from './type/primitive';
@@ -27,6 +28,7 @@ type SchemaObject = OpenAPIV3.ReferenceObject | OpenAPIV3.NonArraySchemaObject |
 interface GeneratorOptions {
     api: OpenAPIV3.Document;
     out?: string;
+    ajvOptions?: Partial<Options>;
 }
 
 export class Generator implements GeneratorOptions {
@@ -39,7 +41,7 @@ export class Generator implements GeneratorOptions {
     ajv;
     out;
 
-    constructor({ api, out = 'out' }: GeneratorOptions) {
+    constructor({ api, ajvOptions, out = 'out' }: GeneratorOptions) {
         this.api = api;
         this.references = new Map();
         this.out = out;
@@ -58,7 +60,12 @@ export class Generator implements GeneratorOptions {
             keywords: [{
                 keyword: 'example',
             }],
+            ...ajvOptions,
         });
+
+        if (ajvOptions?.validateFormats) {
+            addFormats(this.ajv);
+        }
 
 
     }
@@ -156,6 +163,7 @@ export class Generator implements GeneratorOptions {
     emitRoutes() {
         const routes = [];
         const validators = [];
+        const validatorsTs = [];
 
         for(const [path, value] of Object.entries(this.api.paths)) {
             const { parameters, description, servers, summary, ...methods } = this.unreference<any>(value);
@@ -171,6 +179,14 @@ export class Generator implements GeneratorOptions {
                     `    assertResponse: assert${operationId}Response,`,
                     `},`,
                 );
+                validatorsTs.push(
+                    `${operationId}: {`,
+                    `    isRequest(arg: unknown): arg is ${operationId}Request;`,
+                    `    isResponse(arg: unknown): arg is ${operationId}Response;`,
+                    `    assertRequest(arg: unknown): asserts arg is ${operationId}Request;`,
+                    `    assertResponse(arg: unknown): asserts arg is ${operationId}Response;`,
+                    `},`,
+                );
             }
             // routes.push(`},`);
         }
@@ -178,16 +194,11 @@ export class Generator implements GeneratorOptions {
         this.write(this.js, validators, 4);
         this.write(this.js, '};');
 
-        this.write(this.dts, [
-            'export const validators: Record<Operation, {',
-            '    isRequest<T>(arg: unknown): arg is T;',
-            '    isResponse<T>(arg: unknown): arg is T;',
-            '    assertRequest<T>(arg: unknown): asserts arg is T;',
-            '    assertResponse<T>(arg: unknown): asserts arg is T;',
-            '}>;',
-        ]);
+        this.write(this.dts, ['export const validators: {']);
+        this.write(this.dts, validatorsTs, 4);
+        this.write(this.dts, '};');
 
-        this.write(this.dts, 'export const routes: { [key: string]: { [key: string]: Operations } };');
+        this.write(this.dts, 'export const routes: { [key: string]: Operation | undefined };');
 
         this.write(this.js, 'exports.routes = {');
         this.write(this.js, routes, 4);

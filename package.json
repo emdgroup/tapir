@@ -28,6 +28,7 @@
     "@types/js-yaml": "^4.0.0",
     "@types/mocha": "^8.0.2",
     "@types/node": "^14.10.0",
+    "@types/yargs": "^16.0.0",
     "@typescript-eslint/eslint-plugin": "^4.1.0",
     "@typescript-eslint/parser": "^4.1.0",
     "chai": "^4.2.0",
@@ -38,9 +39,11 @@
   },
   "dependencies": {
     "ajv": "^7.0.3",
+    "ajv-formats": "^1.5.1",
     "esbuild": "^0.8.36",
     "js-yaml": "^4.0.0",
     "openapi-types": "^7.2.3",
-    "swagger-parser": "^10.0.2"
+    "swagger-parser": "^10.0.2",
+    "yargs": "^16.2.0"
   }
 }
