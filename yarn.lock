@@ -563,9 +563,9 @@ enquirer@^2.3.5:
     ansi-colors "^4.1.1"
 
 esbuild@^0.8.36:
-  version "0.8.36"
-  resolved "https://registry.yarnpkg.com/esbuild/-/esbuild-0.8.36.tgz#f5b7c61473721c7d53ffe7c88708e25f3b6182f3"
-  integrity sha512-kcUQB61Tf8rLJ3mOwP2ruWi/iFufaQcEs4No+JA6e7W2kMOtFExOsbyeFpEF6zNacwk2RF5fYUz5jfZwgn/SJg==
+  version "0.8.56"
+  resolved "https://registry.yarnpkg.com/esbuild/-/esbuild-0.8.56.tgz#9c7c3d6e614db7367afa348adb0ab287c296735e"
+  integrity sha512-PTMdAWK3JI2MNW811znGssGP5GR44tQPr++VQ1rPP0n8Z1cTKbCPD3S/kXPLr3ZZDIwAaVm08fuFym6Rp8l/0A==
 
 escalade@^3.1.1:
   version "3.1.1"

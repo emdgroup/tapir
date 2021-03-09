@@ -9,15 +9,5 @@ export function bundle(entrypoint: string, outfile: string): void {
         format: 'cjs',
         bundle: true,
     });
-    buildSync({
-        entryPoints: [`${outfile}.js`],
-        outfile: `${outfile}.mjs`,
-        platform: 'browser',
-        format: 'esm',
-        bundle: false,
-        target: [
-            'es6',
-        ],
-    });
     fs.unlinkSync(entrypoint);
 }
