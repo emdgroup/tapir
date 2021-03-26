@@ -46,7 +46,7 @@ export class Generator implements GeneratorOptions {
         this.references = new Map();
         this.out = out;
         this.dts = createWriteStream(path.join(out, 'types.d.ts'));
-        this.js = createWriteStream(path.join(out, 'types.ajv.js'));
+        this.js = createWriteStream(path.join(out, 'types.ajv.ts'));
         this.buildReferences('#', this.api);
         this.types = new Map<string, OpenAPIV3.NonArraySchemaObject | OpenAPIV3.ArraySchemaObject>();
         this.dummy = 1;
@@ -190,7 +190,7 @@ export class Generator implements GeneratorOptions {
             }
             // routes.push(`},`);
         }
-        this.write(this.js, `exports.validators = {`);
+        this.write(this.js, `export const validators = {`);
         this.write(this.js, validators, 4);
         this.write(this.js, '};');
 
@@ -200,7 +200,7 @@ export class Generator implements GeneratorOptions {
 
         this.write(this.dts, 'export const routes: { [key: string]: Operation | undefined };');
 
-        this.write(this.js, 'exports.routes = {');
+        this.write(this.js, 'export const routes = {');
         this.write(this.js, routes, 4);
         this.write(this.js, '};');
     }
@@ -265,8 +265,7 @@ export class Generator implements GeneratorOptions {
             exports['is' + type] = ref;
 
             this.write(this.js, [
-                `exports.assert${type} = assert${type};`,
-                `function assert${type}(data) {`,
+                `export function assert${type}(data): asserts data is ${type} {`,
                 `    if(exports.is${type}(data)) return;`,
                 `    throw new ValidationError(exports.is${type}.errors);`,
                 `}`,
@@ -286,6 +285,7 @@ export class Generator implements GeneratorOptions {
                 i = new List(type, schema);
             } else if (schema.enum !== undefined) {
                 i = new Enum(type, schema);
+                i.emitDefinition(this.write.bind(this, this.js));
             }
             if (i) {
                 i.emitDefinition(this.write.bind(this, this.dts));
@@ -313,7 +313,7 @@ export class Generator implements GeneratorOptions {
         ]);
 
         await bundle(
-            path.join(this.out, 'types.ajv.js'),
+            path.join(this.out, 'types.ajv.ts'),
             path.join(this.out, 'types'),
         );
     }
