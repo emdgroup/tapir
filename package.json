@@ -1,6 +1,6 @@
 {
   "name": "@emdgroup/tapir",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0-beta.2",
   "license": "Apache-2.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -38,9 +38,9 @@
     "typescript": "^4.2.3"
   },
   "dependencies": {
-    "ajv": "^7.2.4",
-    "ajv-formats": "^1.5.1",
-    "esbuild": "^0.10.1",
+    "ajv": "^8.0.0",
+    "ajv-formats": "^2.0.0",
+    "esbuild": "^0.10.2",
     "js-yaml": "^4.0.0",
     "openapi-types": "^7.2.3",
     "swagger-parser": "^10.0.2",
