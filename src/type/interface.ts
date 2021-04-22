@@ -41,7 +41,7 @@ export class Interface extends SchemaType {
             } else if (isPrimitiveType(schema)) {
                 fieldType = new PrimitiveType(field, schema).emit();
             }
-            write(`${field}${required.includes(field) ? '' : '?'}: ${fieldType};`, 4);
+            write(`'${field}'${required.includes(field) ? '' : '?'}: ${fieldType};`, 4);
         }
         write('}');
     }
