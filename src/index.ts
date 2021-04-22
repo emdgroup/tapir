@@ -142,7 +142,7 @@ export class Generator implements GeneratorOptions {
         throw new Error('Schema not supported');
     }
 
-    buildPathParameters(pathData: OpenAPIV3.PathItemObject): { pathParameters?: OpenAPIV3.NonArraySchemaObject } {
+    buildPathParameters(pathData: OpenAPIV3.PathItemObject): undefined | OpenAPIV3.NonArraySchemaObject {
         const params = pathData.parameters;
         const props: OpenAPIV3.NonArraySchemaObject = {
             type: 'object',
@@ -155,9 +155,7 @@ export class Generator implements GeneratorOptions {
             props.required?.push(name);
             if(props.properties) props.properties[name] = schema as OpenAPIV3.NonArraySchemaObject;
         });
-        return params ? {
-            pathParameters: props,
-        } : {};
+        return params ? props : undefined;
     }
 
     emitRoutes() {
@@ -246,12 +244,14 @@ export class Generator implements GeneratorOptions {
 
                 const requestBody = this.unreference(operation.requestBody);
                 const schema = requestBody && requestBody.content && requestBody.content['application/json'].schema;
+                const pathParameters = this.buildPathParameters(value || {});
+
                 this.addType({
                     type: 'object',
-                    required: ['json', 'pathParameters'],
+                    required: pathParameters ? ['json', 'pathParameters'] : ['json'],
                     properties: {
                         json: schema || { type: 'object', properties: {} },
-                        ...this.buildPathParameters(value || {}),
+                        ...(pathParameters ? { pathParameters } : {}),
                     },
                 } as OpenAPIV3.NonArraySchemaObject, requestTypeName);
             }
