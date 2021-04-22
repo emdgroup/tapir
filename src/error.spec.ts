@@ -7,21 +7,21 @@ const tests: {
 } = {
     additionalProperties: [{
         keyword: 'additionalProperties',
-        dataPath: '',
+        instancePath: '',
         schemaPath: '#/additionalProperties',
         params: { additionalProperty: 'bar' },
         message: 'should NOT have additional properties',
     }, { name: 'AdditionalProperties', actual: ['bar'], expected: [] }],
     required: [{
         keyword: 'required',
-        dataPath: '',
+        instancePath: '',
         schemaPath: '#/required',
         params: { missingProperty: 'bar' },
         message: "should have required property 'bar'",
     }, { name: 'Required', field: 'bar' }],
     nestedArray: [{
         keyword: 'type',
-        dataPath: '/bar/0',
+        instancePath: '/bar/0',
         schemaPath: '#/properties/bar/items/type',
         params: { type: 'string' },
         message: 'should be string',
@@ -30,7 +30,7 @@ const tests: {
     }] }],
     rootArray: [{
         keyword: 'type',
-        dataPath: '/0',
+        instancePath: '/0',
         schemaPath: '#/items/type',
         params: { type: 'string' },
         message: 'should be string',
@@ -39,7 +39,7 @@ const tests: {
     }] }],
     arrayDataType: [{
         keyword: 'type',
-        dataPath: '/',
+        instancePath: '/',
         schemaPath: '#/items/type',
         params: { type: 'string' },
         message: 'should be string',

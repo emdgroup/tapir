@@ -46,12 +46,12 @@ export class ValidationError extends Error {
     translate(input: DefinedError[]): Errors[] {
         const errors: Errors[] = [];
         for (const error of input) {
-            const [_, rawField, nested] = error.dataPath.split('/');
+            const [_, rawField, nested] = error.instancePath.split('/');
             const field = rawField !== undefined && rawField.length && !isNumber.test(rawField) ? { field: rawField } : {};
             if (nested || isNumber.test(rawField)) {
                 const err = this.translate([{
                     ...error,
-                    dataPath: '/',
+                    instancePath: '/',
                 }]);
                 errors.push({
                     name: 'Nested',
