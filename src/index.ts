@@ -5,7 +5,7 @@ import { OpenAPIV3 } from "openapi-types";
 
 import { Interface, isInterface } from './type/interface';
 import { Composite, isComposite } from './type/composite';
-import { List } from './type/list';
+import { List, isList } from './type/list';
 import { Enum } from './type/enum';
 import { SchemaType } from './type/base';
 
@@ -93,7 +93,8 @@ export class Generator implements GeneratorOptions {
     }
 
     walkSchema(schema: SchemaObject): boolean {
-        return '$ref' in schema || isInterface(schema) || isComposite(schema) || schema.type === 'array';
+        return '$ref' in schema || isInterface(schema) || isComposite(schema)
+            || (isList(schema) && 'type' in schema.items && !isPrimitiveType(schema.items));
     }
 
     generateName(name: string | undefined, prop: string): string {

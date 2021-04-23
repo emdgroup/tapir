@@ -4,6 +4,9 @@ import { SchemaType, WriteCb } from './base';
 import { RefType } from './ref';
 import { PrimitiveType, isPrimitiveType } from './primitive';
 
+export function isList(schema: OpenAPIV3.SchemaObject): schema is OpenAPIV3.ArraySchemaObject {
+    return schema.type === 'array';
+}
 export class List extends SchemaType {
     schema: OpenAPIV3.ArraySchemaObject;
     subType: RefType | PrimitiveType;
@@ -25,6 +28,7 @@ export class List extends SchemaType {
     }
 
     emit(): string {
-        return `${this.subType.emit()}[]`;
+        const tp = `${this.subType.emit()}[]`;
+        return this.nullable ? `${tp} | null` : tp;
     }
 }

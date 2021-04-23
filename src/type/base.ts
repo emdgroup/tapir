@@ -8,6 +8,7 @@ export class SchemaType {
     assertionName;
     typeGuardName;
     required;
+    nullable;
 
     constructor(name: string, schema: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject) {
         this.name = name;
@@ -15,6 +16,7 @@ export class SchemaType {
         this.assertionName = `assert${this.name}`;
         this.typeGuardName = `is${this.name}`;
         this.required = false;
+        this.nullable = 'nullable' in schema && schema.nullable || false;
     }
 
     typeCheck(): string {
@@ -51,6 +53,6 @@ export class SchemaType {
     }
 
     emit(): string {
-        return this.name;
+        return this.nullable ? `${this.name} | null` : this.name;
     }
 }

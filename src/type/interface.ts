@@ -5,28 +5,23 @@ import { PrimitiveType, isPrimitiveType } from './primitive';
 import { Composite, isComposite } from './composite';
 import { List } from './list';
 import { RefType } from './ref';
+import type { Generator } from '..';
 
 export function isInterface(schema: OpenAPIV3.SchemaObject): schema is OpenAPIV3.NonArraySchemaObject & { type: 'object' } {
     return schema.type === 'object' || schema.type === undefined && !!schema.properties;
 }
 
 export class Interface extends SchemaType {
-    extends: string[];
     schema: OpenAPIV3.NonArraySchemaObject;
 
-    constructor(name: string, schema: OpenAPIV3.NonArraySchemaObject, ext?: string[]) {
+    constructor(name: string, schema: OpenAPIV3.NonArraySchemaObject) {
         super(name, schema);
         this.schema = schema;
-        this.extends = ext || [];
     }
 
     emitDefinition(write: WriteCb): void {
-        const ext = this.extends.length ? ` extends ${this.extends.join(', ')}` : '';
-        if(this.name) {
-            write(`export interface ${this.name}${ext} {`);
-        } else {
-            write(`interface ${this.name}${ext} {`);
-        }
+        const name = this.nullable ? `${this.name}NonNullable` : this.name;
+        write(`export interface ${name} {`);
 
         const required = this.schema.required || [];
 
@@ -44,5 +39,9 @@ export class Interface extends SchemaType {
             write(`'${field}'${required.includes(field) ? '' : '?'}: ${fieldType};`, 4);
         }
         write('}');
+
+        if (this.nullable) {
+            write(`export type ${this.name} = ${name} | null;`);
+        }
     }
 }

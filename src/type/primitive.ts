@@ -8,14 +8,12 @@ export function isPrimitiveType(schema: OpenAPIV3.SchemaObject): schema is OpenA
 export class PrimitiveType extends SchemaType {
     type?: 'string' | 'number' | 'boolean' | 'object';
     enum;
-    nullable;
 
     constructor(name: string, schema: OpenAPIV3.NonArraySchemaObject) {
         super(name, schema);
-        const { type, enum: values, nullable } = schema;
+        const { type, enum: values } = schema;
         this.type = type === 'integer' ? 'number' : type;
         this.enum = values;
-        this.nullable = !!nullable;
         if (this.type === 'string') {
             this.assertionName = `assertString`;
         } else if (this.type === 'number') {

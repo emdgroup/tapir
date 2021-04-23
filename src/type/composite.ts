@@ -37,7 +37,8 @@ export class Composite extends SchemaType {
             if (!('$ref' in schema)) continue;
             types.push(new RefType(this.name, schema).emit());
         }
-        return types.join(joinOperator);
+        const tp = types.join(joinOperator);
+        return this.nullable ? `(${tp}) | null` : tp;
     }
 
     emitDefinition(write: WriteCb): void {
