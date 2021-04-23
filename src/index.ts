@@ -151,8 +151,8 @@ export class Generator implements GeneratorOptions {
             properties: {},
         };
         params?.forEach((p) => {
-            if('$ref' in p) return;
-            const { name, in: where, schema } = p;
+            const { name, in: where, schema } = this.unreference(p);
+            if (where !== 'path') return;
             props.required?.push(name);
             if(props.properties) props.properties[name] = schema as OpenAPIV3.NonArraySchemaObject;
         });
