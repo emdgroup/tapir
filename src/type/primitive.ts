@@ -1,5 +1,5 @@
 import { OpenAPIV3 } from 'openapi-types';
-import { SchemaType } from './base';
+import { SchemaType, WriteCb } from './base';
 
 export function isPrimitiveType(schema: OpenAPIV3.SchemaObject): schema is OpenAPIV3.NonArraySchemaObject {
     return !!schema.type && ['string', 'number', 'boolean', 'integer'].includes(schema.type);
@@ -42,5 +42,9 @@ export class PrimitiveType extends SchemaType {
             tp = this.type || 'undefined';
         }
         return this.nullable ? `${tp} | null` : tp;
+    }
+
+    emitDefinition(write: WriteCb): void {
+        write(`export type ${this.name} = ${this.type};`);
     }
 }

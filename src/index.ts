@@ -17,7 +17,7 @@ import standaloneCode from 'ajv/dist/standalone';
 import addFormats from 'ajv-formats';
 
 import { createWriteStream } from 'fs';
-import { isPrimitiveType } from './type/primitive';
+import { isPrimitiveType, PrimitiveType } from './type/primitive';
 import { bundle } from './bundle';
 
 export function isObject(arg: unknown): arg is Record<string, unknown> {
@@ -287,6 +287,8 @@ export class Generator implements GeneratorOptions {
             } else if (schema.enum !== undefined) {
                 i = new Enum(type, schema);
                 i.emitDefinition(this.write.bind(this, this.js));
+            } else if (isPrimitiveType(schema)) {
+                i = new PrimitiveType(type, schema);
             }
             if (i) {
                 i.emitDefinition(this.write.bind(this, this.dts));
