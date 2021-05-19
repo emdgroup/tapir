@@ -18,7 +18,6 @@ This will create the following files:
 dist/
   types.d.ts
   types.js
-  types.mjs
 ```
 
 The generated files are self-contained and tree-shakable.
@@ -30,15 +29,14 @@ The following properties should be set in the `package.json` file to make the pa
 ```json
 {
     "types": "dist/types.d.ts",
-    "main": "dist/types.js",
-    "module": "dist/types.mjs"
+    "main": "dist/types.js"
 }
 ```
 
 ## Supported OpenAPI schemas
 
 * Responses
-* Request bodys (application/json only)
+* Request bodies (application/json only)
 * Path parameters
 
 Missing:
@@ -52,17 +50,7 @@ Tested:
 
 * Core Types: `boolean`, `string`, `number`, `integer`
     * `enum`
-* Objects:
-    * `required`
-    * `allOf` and `oneOf`
-    * `additionalProperties` with a boolean
-* Arrays:
-    * `items`
-
-Untested:
-
-* [Any Type](https://swagger.io/docs/specification/data-models/data-types/#any)
-* Core Types: `boolean`, `string`, `number`, `integer`
+    * `nullable`
     * `minLength`
     * `maxLength`
     * `minimum`
@@ -72,17 +60,25 @@ Untested:
     * `multipleOf`
     * `format`
     * `not`
-    * `nullable`
     * `pattern`
+* Objects:
+    * `required`
+    * `allOf`, `anyOf` and `oneOf`
+    * `additionalProperties` with a boolean
+* Arrays:
+    * `items`
+    * `minItems`
+    * `maxItems`
+    * `uniqueItems`
+
+Untested:
+
+* [Any Type](https://swagger.io/docs/specification/data-models/data-types/#any)
+* Core Types: `boolean`, `string`, `number`, `integer`
     * `readOnly`
     * `writeOnly`
 * Objects:
     * `additionalProperties` with a schema
     * `minProperties`
     * `maxProperties`
-    * `anyOf`
     * `xml`
-* Arrays:
-    * `minItems`
-    * `maxItems`
-    * `uniqueItems`
