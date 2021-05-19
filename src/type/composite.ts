@@ -10,6 +10,7 @@ export function isComposite(schema: OpenAPIV3.SchemaObject): schema is OpenAPIV3
 enum CompositeModes {
     'ALL_OF',
     'ONE_OF',
+    'ANY_OF',
 }
 
 export class Composite extends SchemaType {
@@ -19,7 +20,7 @@ export class Composite extends SchemaType {
     constructor(name: string, schema: OpenAPIV3.NonArraySchemaObject) {
         super(name, schema);
         this.schema = schema;
-        this.mode = schema.allOf ? CompositeModes.ALL_OF : CompositeModes.ONE_OF;
+        this.mode = schema.allOf ? CompositeModes.ALL_OF : schema.oneOf ? CompositeModes.ONE_OF : CompositeModes.ANY_OF;
     }
 
     emit(): string {
@@ -27,7 +28,7 @@ export class Composite extends SchemaType {
 
         if (this.mode === CompositeModes.ALL_OF) {
             joinOperator = " & ";
-        } else if (this.mode === CompositeModes.ONE_OF) {
+        } else if (this.mode === CompositeModes.ONE_OF || this.mode === CompositeModes.ANY_OF) {
             joinOperator = " | ";
         } else {
             throw new Error(`Unhandled composite operator ${this.mode}`);
