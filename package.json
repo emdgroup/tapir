@@ -16,8 +16,8 @@
   ],
   "bin": "./bin/cli.js",
   "scripts": {
-    "test:ts": "mocha --bail --watch-files '**/*.ts' --extension ts --require ts-node/register --timeout 10000 'src/**/*.spec.ts'",
-    "test:js": "yarn build && mocha --bail --watch-files '**/*.js' --timeout 10000 'dist/**/*.spec.js'",
+    "test:ts": "mocha --bail --watch-files '**/*.ts' --extension ts --require ts-node/register --timeout 10000 src/testSetup.ts 'src/**/*.spec.ts'",
+    "test:js": "yarn build && mocha --bail --watch-files '**/*.js' --timeout 10000 dist/testSetup.js 'dist/**/*.spec.js'",
     "test:strict": "yarn test:js --forbid-only",
     "build": "tsc",
     "prepublish": "yarn build",
@@ -38,12 +38,12 @@
     "typescript": "^4.2.3"
   },
   "dependencies": {
-    "ajv": "^8.0.0",
-    "ajv-formats": "^2.0.0",
-    "esbuild": "^0.10.2",
+    "ajv": "^8.4.0",
+    "ajv-formats": "^2.1.0",
+    "esbuild": "^0.12.1",
     "js-yaml": "^4.0.0",
     "openapi-types": "^7.2.3",
     "swagger-parser": "^10.0.2",
-    "yargs": "^16.2.0"
+    "yargs": "^17.0.0"
   }
 }
