@@ -1,0 +1,134 @@
+openapi: 3.0.3
+
+info:
+  title: foo
+  version: 1.0.0
+
+paths:
+  /pet/{petId}:
+    parameters:
+      - $ref: '#/components/parameters/petId'
+    get:
+      operationId: GetPet
+      responses:
+        200:
+          description: OK
+
+  /domain:
+    get:
+      operationId: describeDomain
+      responses:
+        200:
+          description: OK
+    post:
+      operationId: CreateDomain
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                domainName:
+                  $ref: '#/components/schemas/DomainName'
+      responses:
+        200:
+          description: OK
+
+components:
+  parameters:
+    petId:
+      in: path
+      required: true
+      name: petId
+      schema:
+        type: string
+            
+  schemas:
+    DomainName:
+      type: string
+      description: Domains containing unicode characters must be punycode encoded.
+      pattern: ^[a-z0-9-\.]+$
+      maxLength: 64
+    Foo:
+      type: object
+      properties:
+        bar:
+          type: object
+          nullable: true
+          properties:
+            baz:
+              type: string
+        foo:
+          type: array
+          nullable: true
+          items:
+            type: string
+        listOfObjects:
+          type: array
+          nullable: true
+          items:
+            type: object
+            properties:
+              prop1:
+                type: string
+        url:
+          type: string
+          format: uri
+          nullable: true
+    TeamInvitation:
+      type: object
+      properties:
+        stateInlined:
+          type: string
+          nullable: true
+          enum:
+            - CREATED
+            - ACCEPTED
+            - EXPIRED
+            - null
+        stateRef:
+          $ref: '#/components/schemas/TeamInvitationState'
+    TeamInvitationState:
+      type: string
+      nullable: true
+      enum:
+        - CREATED
+        - ACCEPTED
+        - EXPIRED
+        - null
+    BoolOrString:
+      oneOf:
+        - type: object
+          required:
+            - op
+            - path
+          additionalProperties: false
+          properties:
+            op:
+              type: string
+            path:
+              type: string
+        - type: object
+          required:
+            - value
+            - op
+            - path
+          properties:
+            op:
+              type: string
+            path:
+              type: string
+            value:
+              type: string
+        - type: object
+          required:
+            - value
+            - op
+            - path
+          properties:
+            op:
+              type: string
+            path:
+              type: string
+            value:
+              type: boolean

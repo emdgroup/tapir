@@ -1,5 +1,4 @@
 node_modules/
-fixtures/
 dist/
 .DS_Store
 tmp/
