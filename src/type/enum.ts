@@ -1,11 +1,12 @@
 import { OpenAPIV3 } from 'openapi-types';
+import type { Generator } from '..';
 
 import { WriteCb } from './base';
 import { PrimitiveType } from './primitive';
 
 export class Enum extends PrimitiveType {
-    constructor(name: string, schema: OpenAPIV3.NonArraySchemaObject) {
-        super(name, schema);
+    constructor(name: string, schema: OpenAPIV3.NonArraySchemaObject, generator: Generator) {
+        super(name, schema, generator);
     }
 
     emitDefinition(write: WriteCb): void {
@@ -13,7 +14,8 @@ export class Enum extends PrimitiveType {
             write(`export enum ${this.name} {`);
 
             for (const v of this.enum || []) {
-                write(`${v} = "${v}",`, 4);
+                if (v === null) continue;
+                write(`'${v}' = '${v}',`, 4);
             }
             write('}');
         } else {

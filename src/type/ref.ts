@@ -1,11 +1,12 @@
 import { OpenAPIV3 } from 'openapi-types';
+import type { Generator } from '..';
 import { SchemaType } from './base';
 
 export class RefType extends SchemaType {
     refName;
 
-    constructor(name: string, schema: OpenAPIV3.ReferenceObject) {
-        super(name, schema);
+    constructor(name: string, schema: OpenAPIV3.ReferenceObject, generator: Generator) {
+        super(name, schema, generator);
         const ref = schema.$ref;
         const parts = ref.split('/');
         this.refName = parts[parts.length - 1];
@@ -14,6 +15,9 @@ export class RefType extends SchemaType {
     }
 
     emit(): string {
-        return this.refName;
+        const unreferenced = this.generator.unreference(this.schema) as OpenAPIV3.SchemaObject;
+        const nullable = unreferenced.nullable || false;
+
+        return nullable ? `${this.refName} | null` : this.refName;
     }
 }

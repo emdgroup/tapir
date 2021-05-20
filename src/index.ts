@@ -104,10 +104,16 @@ export class Generator implements GeneratorOptions {
         return candidate;
     }
 
+    addReference(name: string, schema: OpenAPIV3.SchemaObject): OpenAPIV3.ReferenceObject {
+        const path = `#/components/schemas/${name}`;
+        this.references.set(path, schema);
+        return { '$ref': path };
+    }
+
     addType(schema: OpenAPIV3.ReferenceObject | OpenAPIV3.SchemaObject, name?: string): OpenAPIV3.ReferenceObject | OpenAPIV3.SchemaObject {
         if ('$ref' in schema) {
             const parts = schema.$ref.split('/');
-            const ref = this.references.get(schema.$ref) as OpenAPIV3.NonArraySchemaObject | OpenAPIV3.ArraySchemaObject;
+            const ref = this.unreference(schema) as OpenAPIV3.SchemaObject;
             if (ref && this.walkSchema(ref)) this.addType(ref, parts[parts.length - 1]);
             else if (ref) this.types.set(parts[parts.length - 1], ref);
             return schema;
@@ -115,8 +121,9 @@ export class Generator implements GeneratorOptions {
             const newName = name ? name : `Anonymous${this.dummy++}`;
             schema.allOf = schema.allOf?.map((s) => this.walkSchema(s) ? this.addType(s) : s);
             schema.oneOf = schema.oneOf?.map((s) => this.walkSchema(s) ? this.addType(s) : s);
+            schema.anyOf = schema.anyOf?.map((s) => this.walkSchema(s) ? this.addType(s) : s);
             this.types.set(newName, schema);
-            return { '$ref': `#/components/schemas/${newName}` };
+            return this.addReference(newName, schema);
         } else if (isInterface(schema)) {
             const newName = name ? name : `Anonymous${this.dummy++}`;
 
@@ -127,13 +134,13 @@ export class Generator implements GeneratorOptions {
                 };
             }
             this.types.set(newName, schema);
-            return { '$ref': `#/components/schemas/${newName}` };
+            return this.addReference(newName, schema);
         } else if (schema.type === 'array') {
             const newName = name ? name : `Anonymous${this.dummy++}`;
             const itemSchema = schema.items;
             if (this.walkSchema(itemSchema)) schema.items = this.addType(itemSchema, this.generateName(name, 'item'));
             this.types.set(newName, schema);
-            return { '$ref': `#/components/schemas/${newName}` };
+            return this.addReference(newName, schema);
         } else if (isPrimitiveType(schema)) {
             const newName = name ? name : `Anonymous${this.dummy++}`;
             this.types.set(newName, schema);
@@ -168,26 +175,27 @@ export class Generator implements GeneratorOptions {
             const { parameters, description, servers, summary, ...methods } = this.unreference<any>(value);
             for (const [method, operation] of Object.entries(methods as { [key: string]: OpenAPIV3.OperationObject })) {
                 const { operationId } = operation;
+                if (!operationId) continue;
+                const ucOperationId = operationId.slice(0, 1).toUpperCase() + operationId.slice(1);
                 routes.push(`    '${method.toUpperCase()} ${path}': '${operationId}',`);
-                this.write(this.dts, `export type ${operationId}Route = Route<${operationId}Request, ${operationId}Response>;`);
+                this.write(this.dts, `export type ${ucOperationId}Route = Route<${ucOperationId}Request, ${ucOperationId}Response>;`);
                 validators.push(
                     `${operationId}: {`,
-                    `    isRequest: exports.is${operationId}Request,`,
-                    `    isResponse: exports.is${operationId}Response,`,
-                    `    assertRequest: assert${operationId}Request,`,
-                    `    assertResponse: assert${operationId}Response,`,
+                    `    isRequest: exports.is${ucOperationId}Request,`,
+                    `    isResponse: exports.is${ucOperationId}Response,`,
+                    `    assertRequest: assert${ucOperationId}Request,`,
+                    `    assertResponse: assert${ucOperationId}Response,`,
                     `},`,
                 );
                 validatorsTs.push(
                     `${operationId}: {`,
-                    `    isRequest(arg: unknown): arg is ${operationId}Request;`,
-                    `    isResponse(arg: unknown): arg is ${operationId}Response;`,
-                    `    assertRequest(arg: unknown): asserts arg is ${operationId}Request;`,
-                    `    assertResponse(arg: unknown): asserts arg is ${operationId}Response;`,
+                    `    isRequest(arg: unknown): arg is ${ucOperationId}Request;`,
+                    `    isResponse(arg: unknown): arg is ${ucOperationId}Response;`,
+                    `    assertRequest(arg: unknown): asserts arg is ${ucOperationId}Request;`,
+                    `    assertResponse(arg: unknown): asserts arg is ${ucOperationId}Response;`,
                     `},`,
                 );
             }
-            // routes.push(`},`);
         }
         this.write(this.js, `export const validators = {`);
         this.write(this.js, validators, 4);
@@ -216,7 +224,8 @@ export class Generator implements GeneratorOptions {
             const { parameters, description, servers, summary, ...methods } = this.unreference<any>(value);
             for (const [, operation] of Object.entries(methods as { [key: string]: OpenAPIV3.OperationObject })) {
                 const { operationId } = operation;
-                if (operationId) operations.push(operationId);
+                if (!operationId) continue;
+                operations.push(operationId);
                 const responses: OpenAPIV3.NonArraySchemaObject[] = [];
                 for (const [code, response] of Object.entries(operation.responses || {})) {
                     const { content } = this.unreference(response);
@@ -235,13 +244,14 @@ export class Generator implements GeneratorOptions {
                         },
                     });
                 }
-                const responseTypeName = `${operationId}Response`;
+                const upperCased = operationId.slice(0, 1).toUpperCase() + operationId.slice(1);
+                const responseTypeName = `${upperCased}Response`;
                 this.addType(responses.length === 1 ? responses[0] : {
                     type: 'object',
                     oneOf: responses,
                 }, responseTypeName);
 
-                const requestTypeName = `${operationId}Request`;
+                const requestTypeName = `${upperCased}Request`;
 
                 const requestBody = this.unreference(operation.requestBody);
                 const schema = requestBody && requestBody.content && requestBody.content['application/json'].schema;
@@ -265,30 +275,34 @@ export class Generator implements GeneratorOptions {
             this.ajv.addSchema(schema, ref);
             exports['is' + type] = ref;
 
+            const unreferenced = this.unreference(schema);
+
+            const nullableType = unreferenced.nullable ? `${type} | null` : type;
+
             this.write(this.js, [
-                `export function assert${type}(data): asserts data is ${type} {`,
+                `export function assert${type}(data): asserts data is ${nullableType} {`,
                 `    if(exports.is${type}(data)) return;`,
                 `    throw new ValidationError(exports.is${type}.errors);`,
                 `}`,
                 '',
             ]);
             this.write(this.dts, [
-                `export function assert${type}(data: unknown): asserts data is ${type};`,
-                `export function is${type}(data: unknown): data is ${type};`,
+                `export function assert${type}(data: unknown): asserts data is ${nullableType};`,
+                `export function is${type}(data: unknown): data is ${nullableType};`,
             ]);
 
             let i: SchemaType | undefined = undefined;
             if (isComposite(schema)) {
-                i = new Composite(type, schema);
+                i = new Composite(type, schema, this);
             } else if (isInterface(schema)) {
-                i = new Interface(type, schema);
+                i = new Interface(type, schema, this);
             } else if (schema.type === 'array') {
-                i = new List(type, schema);
+                i = new List(type, schema, this);
             } else if (schema.enum !== undefined) {
-                i = new Enum(type, schema);
+                i = new Enum(type, schema, this);
                 i.emitDefinition(this.write.bind(this, this.js));
             } else if (isPrimitiveType(schema)) {
-                i = new PrimitiveType(type, schema);
+                i = new PrimitiveType(type, schema, this);
             }
             if (i) {
                 i.emitDefinition(this.write.bind(this, this.dts));

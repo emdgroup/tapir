@@ -1,6 +1,8 @@
 import { OpenAPIV3 } from 'openapi-types';
 import { SchemaType, WriteCb } from './base';
 
+import type { Generator } from '..';
+
 export function isPrimitiveType(schema: OpenAPIV3.SchemaObject): schema is OpenAPIV3.NonArraySchemaObject {
     return !!schema.type && ['string', 'number', 'boolean', 'integer'].includes(schema.type);
 }
@@ -9,8 +11,8 @@ export class PrimitiveType extends SchemaType {
     type?: 'string' | 'number' | 'boolean' | 'object';
     enum;
 
-    constructor(name: string, schema: OpenAPIV3.NonArraySchemaObject) {
-        super(name, schema);
+    constructor(name: string, schema: OpenAPIV3.NonArraySchemaObject, generator: Generator) {
+        super(name, schema, generator);
         const { type, enum: values } = schema;
         this.type = type === 'integer' ? 'number' : type;
         this.enum = values;

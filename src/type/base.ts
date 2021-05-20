@@ -1,4 +1,5 @@
 import { OpenAPIV3 } from 'openapi-types';
+import type { Generator } from '..';
 
 export type WriteCb = (line: string | string[], indent?: number) => void;
 
@@ -9,14 +10,16 @@ export class SchemaType {
     typeGuardName;
     required;
     nullable;
+    generator;
 
-    constructor(name: string, schema: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject) {
+    constructor(name: string, schema: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject, generator: Generator) {
         this.name = name;
         this.schema = schema;
         this.assertionName = `assert${this.name}`;
         this.typeGuardName = `is${this.name}`;
         this.required = false;
         this.nullable = 'nullable' in schema && schema.nullable || false;
+        this.generator = generator;
     }
 
     typeCheck(): string {

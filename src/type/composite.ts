@@ -1,4 +1,5 @@
 import { OpenAPIV3 } from 'openapi-types';
+import { Generator } from '..';
 
 import { WriteCb, SchemaType } from './base';
 import { RefType } from './ref';
@@ -17,8 +18,8 @@ export class Composite extends SchemaType {
     mode: CompositeModes;
     schema: OpenAPIV3.NonArraySchemaObject;
 
-    constructor(name: string, schema: OpenAPIV3.NonArraySchemaObject) {
-        super(name, schema);
+    constructor(name: string, schema: OpenAPIV3.NonArraySchemaObject, generator: Generator) {
+        super(name, schema, generator);
         this.schema = schema;
         this.mode = schema.allOf ? CompositeModes.ALL_OF : schema.oneOf ? CompositeModes.ONE_OF : CompositeModes.ANY_OF;
     }
@@ -36,7 +37,7 @@ export class Composite extends SchemaType {
         const types: string[] = [];
         for (const schema of this.schema.allOf || this.schema.oneOf || []) {
             if (!('$ref' in schema)) continue;
-            types.push(new RefType(this.name, schema).emit());
+            types.push(new RefType(this.name, schema, this.generator).emit());
         }
         const tp = types.join(joinOperator);
         return this.nullable ? `(${tp}) | null` : tp;
