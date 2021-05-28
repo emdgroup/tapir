@@ -18,7 +18,7 @@
   "scripts": {
     "test:ts": "mocha --bail --watch-files '**/*.ts' --extension ts --require ts-node/register --timeout 10000 src/testSetup.ts 'src/**/*.spec.ts'",
     "test:js": "yarn build && mocha --bail --watch-files '**/*.js' --timeout 10000 dist/testSetup.js 'dist/**/*.spec.js'",
-    "test:strict": "yarn test:js --forbid-only",
+    "test:strict": "yarn test:js --forbid-only && tsd",
     "build": "tsc",
     "prepublish": "yarn build",
     "lint": "eslint src/"
