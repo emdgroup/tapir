@@ -20,6 +20,8 @@ import { createWriteStream } from 'fs';
 import { isPrimitiveType, PrimitiveType } from './type/primitive';
 import { bundle } from './bundle';
 
+const { NODE_TESTING: TESTING } = process.env;
+
 export function isObject(arg: unknown): arg is Record<string, unknown> {
     return arg !== null && typeof arg === "object" && !Array.isArray(arg);
 }
@@ -312,7 +314,7 @@ export class Generator implements GeneratorOptions {
         const src = path.resolve(__dirname, '..', 'dist');
 
         this.js.write(fs.readFileSync(path.resolve(src, 'error.js')) + '\n');
-        this.dts.write(`export * from '@emdgroup/tapir/dist/error';\n`);
+        this.dts.write(TESTING ? `export * from '../../dist/error';` : `export * from '@emdgroup/tapir/dist/error';\n`);
         this.js.write(standaloneCode(this.ajv, exports) + '\n');
 
         if (operations.length) this.write(this.dts, [
