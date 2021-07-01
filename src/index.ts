@@ -312,7 +312,7 @@ export class Generator implements GeneratorOptions {
         const src = path.resolve(__dirname, '..', 'dist');
 
         this.js.write(fs.readFileSync(path.resolve(src, 'error.js')) + '\n');
-        this.dts.write(fs.readFileSync(path.resolve(src, 'error.d.ts')) + '\n');
+        this.dts.write(`export * from '@emdgroup/tapir/dist/error';\n`);
         this.js.write(standaloneCode(this.ajv, exports) + '\n');
 
         if (operations.length) this.write(this.dts, [

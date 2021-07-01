@@ -1,4 +1,4 @@
-import type { DefinedError } from 'ajv/dist/vocabularies/errors';
+import type { DefinedError } from 'ajv';
 
 interface ErrorDetails {
     name: string;
