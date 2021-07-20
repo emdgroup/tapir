@@ -36,12 +36,12 @@ The following properties should be set in the `package.json` file to make the pa
 ## Supported OpenAPI schemas
 
 * Responses
-* Request bodies (application/json only)
+* Request bodies
 * Path parameters
+* Query parameters
 
 Missing:
 
-* Query parameters
 * Headers
 
 ## Supported Input Validation
