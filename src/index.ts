@@ -152,20 +152,45 @@ export class Generator implements GeneratorOptions {
         throw new Error('Schema not supported');
     }
 
-    buildPathParameters(pathData: OpenAPIV3.PathItemObject): undefined | OpenAPIV3.NonArraySchemaObject {
-        const params = pathData.parameters;
-        const props: OpenAPIV3.NonArraySchemaObject = {
-            type: 'object',
-            required: [],
-            properties: {},
-        };
+    buildContent(req: OpenAPIV3.ReferenceObject | OpenAPIV3.RequestBodyObject | OpenAPIV3.ResponseObject): OpenAPIV3.NonArraySchemaObject | undefined {
+        const requestBody = this.unreference(req);
+        const content = requestBody && requestBody.content || {};
+
+        const contentSchema: OpenAPIV3.MediaTypeObject[] = Object.values(content);
+
+        if (!contentSchema.length) return undefined;
+
+        return contentSchema.length > 1 ? {
+            anyOf: contentSchema.filter((c) => c).map((c) => c.schema as OpenAPIV3.NonArraySchemaObject),
+        } : contentSchema[0].schema as OpenAPIV3.NonArraySchemaObject;
+    }
+
+    buildParameters(params: (OpenAPIV3.ReferenceObject | OpenAPIV3.ParameterObject)[]): {
+        pathParameters?: OpenAPIV3.NonArraySchemaObject,
+        queryStringParameters?: OpenAPIV3.NonArraySchemaObject,
+        json?: OpenAPIV3.NonArraySchemaObject,
+     } {
+        const location: Record<string, OpenAPIV3.NonArraySchemaObject>  = {};
         params?.forEach((p) => {
-            const { name, in: where, schema } = this.unreference(p);
-            if (where !== 'path') return;
-            props.required?.push(name);
-            if(props.properties) props.properties[name] = schema as OpenAPIV3.NonArraySchemaObject;
+            const { name, in: where, schema, required, description } = this.unreference(p);
+            if (!location[where]) location[where] = {
+                type: 'object',
+                required: [],
+                properties: {},
+            };
+            const props = location[where];
+            if (required) props.required?.push(name);
+            if(props.properties) {
+                props.properties[name] = {
+                    ...schema,
+                    ...(description ? { description } : {}),
+                } as OpenAPIV3.NonArraySchemaObject;
+            }
         });
-        return params ? props : undefined;
+        return {
+            ...(location.path ? { pathParameters: location.path } : {}),
+            ...(location.query ? { queryStringParameters: location.query } : {}),
+        };
     }
 
     emitRoutes() {
@@ -180,6 +205,9 @@ export class Generator implements GeneratorOptions {
                 if (!operationId) continue;
                 const ucOperationId = operationId.slice(0, 1).toUpperCase() + operationId.slice(1);
                 routes.push(`    '${method.toUpperCase()} ${path}': '${operationId}',`);
+                if (summary || description || operation.summary || operation.description) {
+                    this.write(this.dts, `/** ${operation.summary || operation.description || summary || description} */`);
+                }
                 this.write(this.dts, `export type ${ucOperationId}Route = Route<${ucOperationId}Request, ${ucOperationId}Response>;`);
                 validators.push(
                     `${operationId}: {`,
@@ -222,24 +250,27 @@ export class Generator implements GeneratorOptions {
         }
 
 
-        for(const [path, value] of Object.entries(this.api.paths)) {
+        for(const value of Object.values(this.api.paths)) {
             const { parameters, description, servers, summary, ...methods } = this.unreference<any>(value);
             for (const [, operation] of Object.entries(methods as { [key: string]: OpenAPIV3.OperationObject })) {
                 const { operationId } = operation;
                 if (!operationId) continue;
+                const desc = operation.summary || operation.description || summary || description;
                 operations.push(operationId);
                 const responses: OpenAPIV3.NonArraySchemaObject[] = [];
                 for (const [code, response] of Object.entries(operation.responses || {})) {
-                    const { content } = this.unreference(response);
+                    const json = this.buildContent(response);
+                    const statusCode = parseInt(code, 10);
                     responses.push({
                         type: 'object',
-                        required: content ? ['statusCode', 'json'] : ['statusCode'],
+                        description: this.unreference(response).description || desc,
+                        required: json ? ['statusCode', 'json'] : ['statusCode'],
                         properties: {
                             statusCode: {
                                 type: 'number',
-                                enum: [parseInt(code)],
+                                ...(isNaN(statusCode) ? {} : { enum: [statusCode] }),
                             },
-                            json: content && content['application/json'].schema || {
+                            json: json || {
                                 type: 'object',
                                 additionalProperties: false,
                             },
@@ -255,17 +286,15 @@ export class Generator implements GeneratorOptions {
 
                 const requestTypeName = `${upperCased}Request`;
 
-                const requestBody = this.unreference(operation.requestBody);
-                const schema = requestBody && requestBody.content && requestBody.content['application/json'].schema;
-                const pathParameters = this.buildPathParameters(value || {});
+                const params = this.buildParameters([...parameters || [], ...operation.parameters || []]);
+                const json = operation.requestBody && this.buildContent(operation.requestBody);
+                if (json) params.json = json;
 
                 this.addType({
                     type: 'object',
-                    required: pathParameters ? ['json', 'pathParameters'] : ['json'],
-                    properties: {
-                        json: schema || { type: 'object', properties: {} },
-                        ...(pathParameters ? { pathParameters } : {}),
-                    },
+                    required: Object.keys(params),
+                    properties: params,
+                    description: desc,
                 } as OpenAPIV3.NonArraySchemaObject, requestTypeName);
             }
         }

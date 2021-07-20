@@ -6,8 +6,8 @@ export type WriteCb = (line: string | string[], indent?: number) => void;
 export class SchemaType {
     name;
     schema;
-    assertionName;
-    typeGuardName;
+    assertionName: string;
+    typeGuardName: string;
     required;
     nullable;
     generator;

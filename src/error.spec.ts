@@ -49,13 +49,13 @@ const tests: {
 };
 
 describe('error', () => {
-    for (const [name, test] of Object.entries(tests)) {
-        const [input, output] = test;
-        describe(name, () => {
-            it('translate', () => {
+    describe('translate', () => {
+        for (const [name, test] of Object.entries(tests)) {
+            const [input, output] = test;
+            it(name, () => {
                 const err = new ValidationError([input]);
                 expect(err.errors).to.deep.equal([output]);
             });
-        });
-    }
+        }
+    });
 });

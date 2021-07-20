@@ -9,7 +9,10 @@ paths:
     parameters:
       - $ref: '#/components/parameters/petId'
     get:
+      parameters:
+        - $ref: '#/components/parameters/q'
       operationId: GetPet
+      summary: Get details for a pet by a given pet ID
       responses:
         200:
           description: OK
@@ -33,6 +36,8 @@ paths:
       responses:
         200:
           description: OK
+        default:
+          $ref: '#/components/responses/Default'
 
 components:
   parameters:
@@ -40,8 +45,33 @@ components:
       in: path
       required: true
       name: petId
+      description: ID for a pet
       schema:
         type: string
+    q:
+      in: query
+      name: q
+      description: Query string parameter
+      schema:
+        type: string
+
+  responses:
+    Default:
+      description: Unexpected error
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [ code, message ]
+            properties:
+              code:
+                type: string
+                description: Error code
+              message:
+                type: string
+                description: Error message
+              details:
+                type: object
             
   schemas:
     DomainName:
@@ -75,6 +105,7 @@ components:
           type: string
           format: uri
           nullable: true
+          description: URL for Foo
     TeamInvitation:
       type: object
       properties:

@@ -32,10 +32,29 @@ const fixtures: {
             input: null,
             result: true,
         }],
-        isDescribeDomainRequestJson: [{
+        isDescribeDomainRequest: [{
             // test that operationIds are properly upper-cased
             input: {},
             result: true,
+        }],
+        isGetPetRequest: [{
+            input: {},
+            result: false,
+        }, {
+            input: { pathParameters: {} },
+            result: false,
+        }, {
+            input: { pathParameters: { petId: 'foo' } },
+            result: false,
+        }, {
+            input: { pathParameters: { petId: 'foo' }, queryStringParameters: {} },
+            result: true,
+        }, {
+            input: { pathParameters: { petId: 'foo' }, queryStringParameters: { q: 'str' } },
+            result: true,
+        }, {
+            input: { pathParameters: { petId: 'foo' }, queryStringParameters: { q: 1 } },
+            result: false,
         }],
     },
 }];
@@ -56,11 +75,10 @@ describe('fixtures', () => fixtures.forEach((test) => {
         });
         Object.keys(test.tests).forEach((t) => it(t, () => {
             const guards = require(path.join(out, 'types.js'));
-            test.tests[t].forEach((v) => {
-                expect(guards[t]).to.be.a('function');
-                expect(guards[t](v.input)).to.equal(v.result);
+            expect(guards[t]).to.be.a('function', t);
+            test.tests[t].forEach((v, idx) => {
+                expect(guards[t](v.input)).to.equal(v.result, `test ${idx}`);
             });
-
         }));
     });
 }));

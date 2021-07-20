@@ -22,6 +22,7 @@ export class Interface extends SchemaType {
 
     emitDefinition(write: WriteCb): void {
         const name = this.nullable ? `${this.name}NonNullable` : this.name;
+        if (this.schema.description) write(`/** ${this.schema.description} */`);
         write(`export interface ${name} {`);
 
         const required = this.schema.required || [];
@@ -37,6 +38,9 @@ export class Interface extends SchemaType {
             } else if (isPrimitiveType(schema)) {
                 fieldType = new PrimitiveType(field, schema, this.generator).emit();
             }
+            const description = this.generator.unreference(schema).description;
+
+            if (description) write(`/** ${description} */`, 4);
             write(`'${field}'${required.includes(field) ? '' : '?'}: ${fieldType};`, 4);
         }
         write('}');
