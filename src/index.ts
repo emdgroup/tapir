@@ -296,7 +296,10 @@ export class Generator implements GeneratorOptions {
 
                 this.addType({
                     type: 'object',
-                    required: Object.entries(params).filter(([, schema]) => schema.required?.length).map((([name]) => name)),
+                    required: Object.entries(params)
+                        .filter(([, schema]) => schema.required?.length)
+                        .map((([name]) => name))
+                        .concat(json ? ['json'] : []),
                     properties: params,
                     description: desc,
                 } as OpenAPIV3.NonArraySchemaObject, requestTypeName);
