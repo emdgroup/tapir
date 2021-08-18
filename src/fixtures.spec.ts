@@ -45,7 +45,10 @@ const fixtures: {
             result: false,
         }, {
             input: { pathParameters: { petId: 'foo' } },
-            result: false,
+            result: true,
+        }, {
+            input: { pathParameters: { petId: 'foo' }, queryStringParameters: null },
+            result: true,
         }, {
             input: { pathParameters: { petId: 'foo' }, queryStringParameters: {} },
             result: true,

@@ -177,6 +177,7 @@ export class Generator implements GeneratorOptions {
                 type: 'object',
                 required: [],
                 properties: {},
+                nullable: where !== 'path',
             };
             const props = location[where];
             if (required) props.required?.push(name);
@@ -292,7 +293,7 @@ export class Generator implements GeneratorOptions {
 
                 this.addType({
                     type: 'object',
-                    required: Object.keys(params),
+                    required: Object.keys(params).filter((p) => p === 'pathParameters'),
                     properties: params,
                     description: desc,
                 } as OpenAPIV3.NonArraySchemaObject, requestTypeName);
