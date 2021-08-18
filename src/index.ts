@@ -350,6 +350,7 @@ export class Generator implements GeneratorOptions {
             `export type Operation =\n    ` +
             operations.map((k) => `'${k}'`).join(' |\n    ') + ';',
         ]);
+        else this.write(this.dts, [`export type Operation = unknown;`]);
 
         this.write(this.dts, ['export type Route<L, K> = [L, K];']);
 
