@@ -293,7 +293,7 @@ export class Generator implements GeneratorOptions {
 
                 this.addType({
                     type: 'object',
-                    required: Object.keys(params).filter((p) => p === 'pathParameters'),
+                    required: Object.keys(params).filter((p) => p !== 'queryStringParameters'),
                     properties: params,
                     description: desc,
                 } as OpenAPIV3.NonArraySchemaObject, requestTypeName);
