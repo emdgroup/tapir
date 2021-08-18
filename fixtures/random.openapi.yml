@@ -19,6 +19,8 @@ paths:
 
   /domain:
     get:
+      parameters:
+        - $ref: '#/components/parameters/required'
       operationId: describeDomain
       responses:
         200:
@@ -54,6 +56,14 @@ components:
       description: Query string parameter
       schema:
         type: string
+    required:
+      in: query
+      required: true
+      name: required
+      description: Query string parameter
+      schema:
+        type: string
+
 
   responses:
     Default:

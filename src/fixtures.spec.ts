@@ -34,8 +34,16 @@ const fixtures: {
         }],
         isDescribeDomainRequest: [{
             // test that operationIds are properly upper-cased
-            input: {},
+            input: { queryStringParameters: { required: 'true' } },
             result: true,
+        }, {
+            // test that operationIds are properly upper-cased
+            input: { queryStringParameters: null },
+            result: false,
+        }, {
+            // test that operationIds are properly upper-cased
+            input: { },
+            result: false,
         }],
         isGetPetRequest: [{
             input: {},

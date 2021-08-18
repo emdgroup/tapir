@@ -170,17 +170,20 @@ export class Generator implements GeneratorOptions {
         queryStringParameters?: OpenAPIV3.NonArraySchemaObject,
         json?: OpenAPIV3.NonArraySchemaObject,
      } {
-        const location: Record<string, OpenAPIV3.NonArraySchemaObject>  = {};
+        const location: Record<string, OpenAPIV3.NonArraySchemaObject> = {};
         params?.forEach((p) => {
             const { name, in: where, schema, required, description } = this.unreference(p);
             if (!location[where]) location[where] = {
                 type: 'object',
                 required: [],
                 properties: {},
-                nullable: where !== 'path',
+                nullable: true,
             };
             const props = location[where];
-            if (required) props.required?.push(name);
+            if (required) {
+                props.required?.push(name);
+                location[where].nullable = false;
+            }
             if(props.properties) {
                 props.properties[name] = {
                     ...schema,
@@ -293,7 +296,7 @@ export class Generator implements GeneratorOptions {
 
                 this.addType({
                     type: 'object',
-                    required: Object.keys(params).filter((p) => p !== 'queryStringParameters'),
+                    required: Object.entries(params).filter(([, schema]) => schema.required?.length).map((([name]) => name)),
                     properties: params,
                     description: desc,
                 } as OpenAPIV3.NonArraySchemaObject, requestTypeName);
