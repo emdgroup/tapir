@@ -1,6 +1,6 @@
 import { OpenAPIV3 } from 'openapi-types';
-import type { Generator } from '..';
-import { SchemaType } from './base';
+import type { Generator } from '../index.js';
+import { SchemaType } from './base.js';
 
 export class RefType extends SchemaType {
     refName;

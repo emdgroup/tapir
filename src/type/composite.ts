@@ -1,8 +1,8 @@
 import { OpenAPIV3 } from 'openapi-types';
-import { Generator } from '..';
+import { emitType } from './index.js';
+import { Generator } from '../index.js';
 
-import { WriteCb, SchemaType } from './base';
-import { RefType } from './ref';
+import { WriteCb, SchemaType } from './base.js';
 
 export function isComposite(schema: OpenAPIV3.SchemaObject): schema is OpenAPIV3.NonArraySchemaObject & { properties: undefined } {
     return schema.properties === undefined && !!(schema.allOf || schema.oneOf || schema.anyOf);
@@ -28,16 +28,16 @@ export class Composite extends SchemaType {
         let joinOperator: string;
 
         if (this.mode === CompositeModes.ALL_OF) {
-            joinOperator = " & ";
+            joinOperator = ' & ';
         } else if (this.mode === CompositeModes.ONE_OF || this.mode === CompositeModes.ANY_OF) {
-            joinOperator = " | ";
+            joinOperator = ' | ';
         } else {
             throw new Error(`Unhandled composite operator ${this.mode}`);
         }
         const types: string[] = [];
-        for (const schema of this.schema.allOf || this.schema.oneOf || []) {
-            if (!('$ref' in schema)) continue;
-            types.push(new RefType(this.name, schema, this.generator).emit());
+
+        for (const schema of this.schema.allOf || this.schema.oneOf || this.schema.anyOf || []) {
+            types.push(emitType(this.name, schema, this.generator));
         }
         const tp = types.join(joinOperator);
         return this.nullable ? `(${tp}) | null` : tp;

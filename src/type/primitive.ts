@@ -1,7 +1,7 @@
 import { OpenAPIV3 } from 'openapi-types';
-import { SchemaType, WriteCb } from './base';
+import { SchemaType, WriteCb } from './base.js';
 
-import type { Generator } from '..';
+import type { Generator } from '../index.js';
 
 export function isPrimitiveType(schema: OpenAPIV3.SchemaObject): schema is OpenAPIV3.NonArraySchemaObject {
     return !!schema.type && ['string', 'number', 'boolean', 'integer'].includes(schema.type);
@@ -17,7 +17,7 @@ export class PrimitiveType extends SchemaType {
         this.type = type === 'integer' ? 'number' : type;
         this.enum = values;
         if (this.type === 'string') {
-            this.assertionName = `assertString`;
+            this.assertionName = 'assertString';
         } else if (this.type === 'number') {
             this.assertionName = 'assertNumber';
         } else if (this.type === 'boolean') {
@@ -28,7 +28,7 @@ export class PrimitiveType extends SchemaType {
         }
 
         if (this.type === 'string') {
-            this.typeGuardName = `isString`;
+            this.typeGuardName = 'isString';
         } else if (this.type === 'number') {
             this.typeGuardName = 'isNumber';
         } else if (this.type === 'boolean') {

@@ -25,6 +25,8 @@ paths:
       responses:
         200:
           description: OK
+        default:
+          $ref: '#/components/responses/Default'
     post:
       operationId: CreateDomain
       requestBody:
@@ -137,6 +139,12 @@ components:
         - ACCEPTED
         - EXPIRED
         - null
+    AnyOfPrimitive:
+      anyOf:
+        - type: string
+          format: ipv4
+        - type: string
+          format: ipv6
     BoolOrString:
       oneOf:
         - type: object
