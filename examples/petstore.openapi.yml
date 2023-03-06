@@ -1,0 +1,57 @@
+openapi: 3.0.2
+
+info: { title: Synopsis, version: 1.0.0 }
+
+paths:
+  /pet/{petId}:
+    parameters:
+      - $ref: '#/components/parameters/PetId'
+    post:
+      operationId: UpdatePet
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pet'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pet'
+        404:
+          description: Not Found
+
+components:
+  parameters:
+    PetId:
+      required: true
+      in: path
+      name: petId
+      schema:
+        $ref: '#/components/schemas/PetId'
+
+  schemas:
+    PetId:
+      type: string
+      pattern: ^pet-[0-9a-f]{8}$
+
+    Pet:
+      type: object
+      required: [name]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 64
+        status:
+          $ref: '#/components/schemas/PetStatus'
+
+    PetStatus:
+      type: string
+      enum:
+        - AVAILABLE
+        - PENDING
+        - SOLD
